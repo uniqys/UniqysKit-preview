@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "key schema",
+  "$comment": "TODO: support encryption like web3 secret storage. ref. https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition",
+  "type": "object",
+  "required": ["privateKey"],
+  "properties": {
+    "privateKey": {
+      "description": "Hexadecimal plain private key. Must keep it in secure",
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "uniqys-kit",
+  "version": "0.0.1",
+  "description": "Uniqys Kit - Create your dapp in Uniqys Network",
+  "author": "Uniqys Project (https://uniqys.net)",
+  "private": true,
+  "license": "SEE LICENSE IN LICENSE.md",
+  "scripts": {
+    "bootstrap": "lerna bootstrap --hoist",
+    "clean": "lerna clean",
+    "build": "lerna run build --concurrency 4",
+    "test": "run-s test:build test:lint test:jest",
+    "test:build": "lerna run test:build --concurrency 8",
+    "test:lint": "lerna run test:lint --concurrency 8",
+    "test:jest": "lerna run test:jest --concurrency 4"
+  },
+  "devDependencies": {
+    "lerna": "^2.11.0",
+    "npm-run-all": "^4.1.3",
+    "run-node": "^1.0.0",
+    "tslint": "^5.11.0",
+    "tslint-config-standard": "^7.1.0",
+    "typescript": "^2.9.2"
+  },
+  "dependencies": {}
+}

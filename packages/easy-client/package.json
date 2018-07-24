@@ -1,0 +1,34 @@
+{
+  "name": "@uniqys/easy-client",
+  "version": "0.0.1",
+  "description": "Uniqys Easy Framework client",
+  "author": "Uniqys Project (https://uniqys.net)",
+  "private": true,
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "run-p build:*",
+    "build:tcs": "tsc -p tsconfig.build.json",
+    "build:webpack": "webpack",
+    "lint": "tslint -c tslint.json -p tsconfig.json",
+    "test": "run-s test:build test:lint",
+    "test:build": "tsc -p tsconfig.json --noEmit",
+    "test:lint": "npm run lint"
+  },
+  "dependencies": {
+    "@uniqys/easy-types": "^0.0.1",
+    "@uniqys/signature": "^0.0.1",
+    "@uniqys/types": "^0.0.1",
+    "axios": "^0.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^10.5.2",
+    "awesome-typescript-loader": "^5.2.0",
+    "license-webpack-plugin": "^1.3.1",
+    "npm-run-all": "^4.1.3",
+    "ts-node": "^7.0.0",
+    "tslint": "^5.11.0",
+    "typescript": "^2.9.2",
+    "webpack": "^4.16.1",
+    "webpack-cli": "^3.1.0"
+  }
+}

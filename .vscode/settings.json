@@ -1,0 +1,60 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/dist": true
+    },
+    "typescript.referencesCodeLens.enabled": true,
+    "tslint.ignoreDefinitionFiles": false,
+    "tslint.autoFixOnSave": true,
+    "tslint.exclude": [
+        "**/node_modules/**/*",
+        "**/*.d.ts"
+    ],
+    "cSpell.enabledLanguageIds": [
+        "html",
+        "javascript",
+        "json",
+        "markdown",
+        "plaintext",
+        "properties",
+        "proto",
+        "typescript",
+        "yaml"
+    ],
+    "cSpell.ignoreRegExpList": [
+        // checker split this to 'libp' and 'p'
+        "libp2p"
+    ],
+    "cSpell.words": [
+        "blockchain",
+        "bodyparser",
+        "dapi",
+        "dapp",
+        "dapps",
+        "deserializable",
+        "deserialize",
+        "deserialized",
+        "deserializer",
+        "ethereum",
+        "grpc",
+        "hashable",
+        "keccak",
+        "leveldown",
+        "mdns",
+        "memdown",
+        "merkle",
+        "merkleized",
+        "multiaddr",
+        "multiaddrs",
+        "prebuild",
+        "promisify",
+        "protobuf",
+        "protoc",
+        "secp",
+        "serializable",
+        "truthy",
+        "uniqys",
+        "validators"
+    ]
+}

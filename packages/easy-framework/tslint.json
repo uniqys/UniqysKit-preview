@@ -1,0 +1,6 @@
+{
+  "extends": "../../config-base/tslint.json",
+  "rules": {
+		"no-unnecessary-type-assertion": false
+	}
+}

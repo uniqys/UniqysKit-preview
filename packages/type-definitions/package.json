@@ -1,0 +1,13 @@
+{
+  "name": "@uniqys/type-definitions",
+  "version": "0.0.1",
+  "description": "TypeScript type definitions for external packages",
+  "author": "Uniqys Project (https://uniqys.net)",
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^10.5.2",
+    "abstract-leveldown": "^4.0.3",
+    "level-errors": "^2.0.0"
+  },
+  "dependencies": {}
+}

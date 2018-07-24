@@ -1,0 +1,17 @@
+{
+  "extends": "../../config-base/tsconfig.build.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "lib": [
+      "dom",
+      "es2018",
+      "esnext.asynciterable"
+    ],
+  },
+  "include": [
+    "./src/**/*.ts"
+  ],
+  "exclude": [
+    "./src/**/*.test.ts"
+  ]
+}
