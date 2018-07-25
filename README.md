@@ -44,7 +44,7 @@ $ ndenv install v10.1.0
 
 ## Install
 
-:memo: It use lerna for monorepo, so you should run bootstrap.
+:memo: It uses lerna for monorepo, so you should run bootstrap.
 
 ```sh
 $ npm install
