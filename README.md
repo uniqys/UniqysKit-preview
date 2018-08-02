@@ -16,7 +16,7 @@ For details, please visit [our website](https://uniqys.net/kit).
 This is a preview version of Uniqys Kit, and it is still under development.
 It has many features that are not implemented yet, but you can try playing our sample DApp or creating your own DApp.
 
-We would appreciate if you could give us your feedback via GitHub issue or [Twitter](https://twitter.com/uniqys).
+We would appreciate if you could give us your feedback via GitHub issue, [Gitter](https://gitter.im/uniqys/UniqysKit-preview), or [Twitter](https://twitter.com/uniqys).
 Then, we will discuss your feedback, and later release an improved version of Uniqys Kit under an OSS license.
 We hope you will be looking forward to it!
 
