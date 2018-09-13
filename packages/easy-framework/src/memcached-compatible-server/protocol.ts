@@ -1,5 +1,5 @@
-import { MemcachedSubset } from './implementation'
 import net from 'net'
+import { ParameterFetcher } from './parameter-fetcher'
 import debug from 'debug'
 const logger = debug('easy-fw:memcached-protocol')
 
@@ -24,70 +24,30 @@ export namespace Response {
   export type Version = {version: string}
 }
 
-export namespace Checker {
-  export class CheckError extends Error {
-    constructor (m: string) {
-      super(m)
-      Object.setPrototypeOf(this, new.target.prototype)
-    }
-  }
-  type C<T> = (raw?: string) => T
-  export function get (): (params: string[]) => void
-  export function get<T1> (c1: C<T1>): (params: string[]) => [T1]
-  export function get<T1, T2> (c1: C<T1>, c2: C<T2>): (params: string[]) => [T1, T2]
-  export function get<T1, T2, T3> (c1: C<T1>, c2: C<T2>, c3: C<T3>): (params: string[]) => [T1, T2, T3]
-  export function get<T1, T2, T3, T4> (c1: C<T1>, c2: C<T2>, c3: C<T3>, c4: C<T4>): (params: string[]) => [T1, T2, T3, T4]
-  export function get<T1, T2, T3, T4, T5> (c1: C<T1>, c2: C<T2>, c3: C<T3>, c4: C<T4>, c5: C<T5>): (params: string[]) => [T1, T2, T3, T4, T5]
-  export function get<T1, T2, T3, T4, T5, T6> (c1: C<T1>, c2: C<T2>, c3: C<T3>, c4: C<T4>, c5: C<T5>, c6: C<T6>): (params: string[]) => [T1, T2, T3, T4, T5, T6]
-  export function get (...cs: C<any>[]): (params: string[]) => any[] {
-    return (params) => {
-      if (params.length > cs.length) { throw new CheckError('too many parameters') }
-      return cs.map((c, i) => c(params[i]))
-    }
-  }
-  export function def (raw?: string): string {
-    if (raw === undefined) { throw new CheckError('missing parameter') }
-    return raw
-  }
-  export function number (raw?: string): number {
-    const str = def(raw)
-    const num = parseInt(str, 10)
-    if (isNaN(num)) { throw new CheckError('bad number format: ' + str) }
-    return num
-  }
-  export function key (raw?: string): string {
-    const key = def(raw)
-    if (key.length > 250) { throw new CheckError('bad key format: ' + key) }
-    return key
-  }
-  export function flags (raw?: string): number {
-    const flags = number(raw)
-    if (flags < 0 || flags > 0xffffffff) { throw new CheckError('bad flags format: ' + flags) }
-    return flags
-  }
-  export function noReply (raw?: string): boolean {
-    if (raw === undefined) { return false }
-    if (raw === 'noreply') { return true }
-    throw new CheckError('bad noreply format: ' + raw)
-  }
+export interface MemcachedSubset {
+  set (keyString: string, flags: number, data: Buffer): Promise<Response.Stored>
+  add (keyString: string, flags: number, data: Buffer): Promise<Response.Stored | Response.NotStored>
+  replace (keyString: string, flags: number, data: Buffer): Promise<Response.Stored | Response.NotStored>
+  append (keyString: string, data: Buffer): Promise<Response.Stored | Response.NotStored>
+  prepend (keyString: string, data: Buffer): Promise<Response.Stored | Response.NotStored>
+  cas (keyString: string, flags: number, casUniq: number, data: Buffer): Promise<Response.Stored | Response.Exists | Response.NotFound>
+  get (keys: string[]): AsyncIterable<Response.Value>
+  gets (keys: string[]): AsyncIterable<Response.ValueS>
+  delete (keyString: string): Promise<Response.NotFound | Response.Deleted>
+  incr (keyString: string, value: number): Promise<Response.Number | Response.NotFound>
+  decr (keyString: string, value: number): Promise<Response.Number | Response.NotFound>
+  stats (...args: any[]): AsyncIterable<Response.Stat>
+  flush (): Promise<Response.Ok>
+  version (): Promise<Response.Version>
+  verbosity (_level: number): Promise<Response.Ok>
+  quit (): Promise<void>
 }
 
-export namespace ParameterFetcher {
-  export const none = Checker.get()
-  export const storage = Checker.get(Checker.key, Checker.flags, Checker.number, Checker.number, Checker.noReply)
-  export const cas = Checker.get(Checker.key, Checker.flags, Checker.number, Checker.number, Checker.number, Checker.noReply)
-  export const get = (params: string[]): [string[]] => {
-    if (params.length === 0) { throw new Checker.CheckError('missing keys') }
-    return [params.map(Checker.key)]
+export class ClientError extends Error {
+  constructor (m: string) {
+    super(m)
+    Object.setPrototypeOf(this, new.target.prototype)
   }
-  export const del = Checker.get(Checker.key, Checker.noReply)
-  export const incrDecr = Checker.get(Checker.key, Checker.number, Checker.noReply)
-  export const touch = Checker.get(Checker.key, Checker.number, Checker.noReply)
-  export const flush = (params: string[]): [number, boolean] =>
-    params.length === 0 ? [0, false] :
-    params[0] === 'noreply' ? [0, true] :
-    [Checker.number(params[0]), Checker.noReply(params[1])]
-  export const verb = Checker.get(Checker.number, Checker.noReply)
 }
 
 // A implementation of Memcached text protocol
@@ -119,7 +79,7 @@ export class MemcachedTextProtocol {
           this.socket.resume()
         })
         .catch((e) => {
-          if (e instanceof Checker.CheckError) {
+          if (e instanceof ClientError) {
             this.writeClientError(e.message)
           } else {
             logger('server error: %o', e)

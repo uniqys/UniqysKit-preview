@@ -45,8 +45,7 @@ describe('block store', () => {
       await promisify(setTimeout)(50)
       await store.setHeight(height + 1)
     }
-    await Promise.all([store.lock(increment), store.lock(increment)])
+    await Promise.all([store.mutex.use(increment), store.mutex.use(increment)])
     expect(await store.getHeight()).toBe(2)
-
   })
 })

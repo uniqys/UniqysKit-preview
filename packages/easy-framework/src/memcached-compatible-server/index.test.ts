@@ -1,14 +1,143 @@
-import { MemcachedCompatibleServer } from '.'
-import { InMemoryStore } from '@uniqys/store'
+import { MemcachedCompatibleServer, MemcachedSubset, Response } from '.'
 import net, { AddressInfo } from 'net'
 import split from 'split'
+
+// implementation for test
+class Item {
+  constructor (
+    public readonly flags: number,
+    public readonly casUniq: number,
+    public readonly data: Buffer
+  ) {}
+}
+class Implementation implements MemcachedSubset {
+  private readonly store = new Map<string, Item>()
+  public async set (key: string, flags: number, data: Buffer): Promise<Response.Stored> {
+    const item = this.store.get(key)
+    this.store.set(key, new Item(flags, (item ? item.casUniq : 0) + 1, data))
+    return Response.Stored
+  }
+  public async add (key: string, flags: number, data: Buffer): Promise<Response.Stored | Response.NotStored> {
+    const item = this.store.get(key)
+    if (item === undefined) {
+      this.store.set(key, new Item(flags, 1, data))
+      return Response.Stored
+    } else {
+      return Response.NotStored
+    }
+  }
+  public async replace (key: string, flags: number, data: Buffer): Promise<Response.Stored | Response.NotStored> {
+    const item = this.store.get(key)
+    if (item !== undefined) {
+      this.store.set(key, new Item(flags, item.casUniq + 1, data))
+      return Response.Stored
+    } else {
+      return Response.NotStored
+    }
+  }
+  public async append (key: string, data: Buffer): Promise<Response.Stored | Response.NotStored> {
+    const item = this.store.get(key)
+    if (item !== undefined) {
+      this.store.set(key, new Item(item.flags, item.casUniq + 1, Buffer.concat([item.data, data])))
+      return Response.Stored
+    } else {
+      return Response.NotStored
+    }
+  }
+  public async prepend (key: string, data: Buffer): Promise<Response.Stored | Response.NotStored> {
+    const item = this.store.get(key)
+    if (item !== undefined) {
+      this.store.set(key, new Item(item.flags, item.casUniq + 1, Buffer.concat([data, item.data])))
+      return Response.Stored
+    } else {
+      return Response.NotStored
+    }
+  }
+  public async cas (key: string, flags: number, casUniq: number, data: Buffer): Promise<Response.Stored | Response.Exists | Response.NotFound> {
+    const item = this.store.get(key)
+    if (item !== undefined) {
+      if (item.casUniq === casUniq) {
+        this.store.set(key, new Item(flags, item.casUniq + 1, data))
+        return Response.Stored
+      } else {
+        return Response.Exists
+      }
+    } else {
+      return Response.NotFound
+    }
+  }
+  public async * get (keys: string[]): AsyncIterable<Response.Value> {
+    for await(const valS of this.gets(keys)) {
+      yield { key: valS.key, flags: valS.flags, data: valS.data }
+    }
+  }
+  public async * gets (keys: string[]): AsyncIterable<Response.ValueS> {
+    for (const key of keys) {
+      const item = this.store.get(key)
+      if (item) {
+        yield { key: key, flags: item.flags, data: item.data, cas: item.casUniq }
+      }
+    }
+  }
+  public async delete (key: string): Promise<Response.NotFound | Response.Deleted> {
+    const item = this.store.get(key)
+    if (item !== undefined) {
+      this.store.delete(key)
+      return Response.Deleted
+    } else {
+      return Response.NotFound
+    }
+  }
+  public async incr (key: string, value: number): Promise<Response.Number | Response.NotFound> {
+    const item = this.store.get(key)
+    if (item !== undefined) {
+      const count = parseInt(item.data.toString(), 10)
+      // On real memcached, count saturate to max 64bit uint (2^64 - 1).
+      // But on this implementation, it is MAX_SAFE_INTEGER (2^53 - 1) in javascript
+      const newCount = Math.min(count + value, Number.MAX_SAFE_INTEGER)
+      this.store.set(key, new Item(item.flags, item.casUniq + 1, Buffer.from(newCount.toString(10))))
+      return newCount
+    } else {
+      return Response.NotFound
+    }
+  }
+  public async decr (key: string, value: number): Promise<Response.Number | Response.NotFound> {
+    const item = this.store.get(key)
+    if (item !== undefined) {
+      const count = parseInt(item.data.toString(), 10)
+      const newCount = Math.max(count - value, 0)
+      this.store.set(key, new Item(item.flags, item.casUniq + 1, Buffer.from(newCount.toString(10))))
+      return newCount
+    } else {
+      return Response.NotFound
+    }
+  }
+  public async * stats (...args: any[]): AsyncIterable<Response.Stat> {
+    // TODO: return some useful information
+    if (args.length > 0) { throw new Error('unsupported argument') }
+    return undefined
+  }
+  public async flush (): Promise<Response.Ok> {
+    this.store.clear()
+    return Response.Ok
+  }
+  public async version (): Promise<Response.Version> {
+    return { version: '0' }
+  }
+  public async verbosity (_level: number): Promise<Response.Ok> {
+    return Response.Ok
+  }
+  public async quit (): Promise<void> {
+    return
+  }
+}
 
 // cSpell:words noreply
 const errorRegex = /^(ERROR|SERVER_ERROR .*|CLIENT_ERROR .*)$/
 
 describe('Test memcached compatibility', () => {
   const timeout = 500
-  const server = new MemcachedCompatibleServer(new InMemoryStore(), { useCas: true })
+  const server = new MemcachedCompatibleServer(new Implementation())
   const _socket = new net.Socket()
   const _lines: NodeJS.ReadableStream = _socket.pipe(split())
   const client = { socket: _socket, lines: _lines }
@@ -440,68 +569,6 @@ describe('Test memcached compatibility', () => {
           expect(line).toMatch(/STAT \S+ \S+/)
         }
         await assertNoMoreResponse(client)
-      }, timeout)
-    })
-  })
-})
-
-// Not defined by protocol.
-describe('Test no cas mode', () => {
-  const timeout = 500
-  const server = new MemcachedCompatibleServer(new InMemoryStore(), { useCas: false })
-  const _socket = new net.Socket()
-  const _lines: NodeJS.ReadableStream = _socket.pipe(split())
-  const client = { socket: _socket, lines: _lines }
-  let port: number
-  beforeAll(done => {
-    server.listen()
-    server.once('listening', () => {
-      port = (server.address() as AddressInfo).port
-      client.socket.connect(port)
-      client.socket.once('connect', () => {
-        client.lines = client.socket.pipe(split())
-        client.lines.pause()
-        done()
-      })
-    })
-  })
-  afterAll(done => {
-    client.socket.end()
-    server.close(done)
-  })
-
-  describe('memcached compatible', () => {
-    describe('gets', () => {
-      it('returns value with dummy cas uniq of key if exists', async () => {
-        client.socket.write('set test_exists 0 0 6 noreply\r\nexists\r\n')
-        client.socket.write('gets test_exists\r\n')
-        const [key, value, cas] = await readKeyValueCas(client)
-        expect([key, value]).toEqual(['test_exists', [0, 'exists']])
-        expect(cas).not.toBeNaN()
-        expect(await readLine(client)).toMatch(/END/)
-        await assertNoMoreResponse(client)
-      }, timeout)
-      it('returns same cas uniq even if updated', async () => {
-        client.socket.write('set test_exists 0 0 6 noreply\r\nexists\r\n')
-        client.socket.write('gets test_exists\r\n')
-        const [,, cas1] = await readKeyValueCas(client)
-        expect(await readLine(client)).toMatch(/END/)
-        client.socket.write('set test_exists 0 0 7 noreply\r\nupdated\r\n')
-        client.socket.write('gets test_exists\r\n')
-        const [,, cas2] = await readKeyValueCas(client)
-        expect(await readLine(client)).toMatch(/END/)
-        expect(cas1).toBe(cas2)
-        await assertNoMoreResponse(client)
-      }, timeout)
-    })
-    describe('cas', () => {
-      it('sets value of key if cas unique matched', async () => {
-        client.socket.write('gets test_exists\r\n')
-        const [, , cas] = await readKeyValueCas(client)
-        expect(await readLine(client)).toMatch(/END/)
-        client.socket.write(`cas test_exists 0 0 3 ${cas}\r\nset\r\n`)
-        expect(await readLine(client)).toMatch(/STORED/)
-        await assertExists(client, 'test_exists', [0, 'set'])
       }, timeout)
     })
   })

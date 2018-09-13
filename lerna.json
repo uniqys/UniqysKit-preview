@@ -4,5 +4,10 @@
     "packages/*",
     "packages/samples/*"
   ],
-  "version": "0.0.1"
+  "command": {
+    "publish": {
+      "allowBranch": "master"
+    }
+  },
+  "version": "0.0.4"
 }

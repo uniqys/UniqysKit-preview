@@ -1,21 +1,27 @@
 {
   "name": "@uniqys/dapp-interface",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "Uniqys DAPI definition",
   "author": "Uniqys Project (https://uniqys.net)",
-  "private": true,
+  "license": "SEE LICENSE IN LICENSE.md",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "/dist"
+  ],
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "tslint -c tslint.json -p tsconfig.json"
   },
   "devDependencies": {
-    "@types/node": "^10.5.2",
+    "@types/node": "^10.9.4",
     "tslint": "^5.11.0",
-    "typescript": "^2.9.2"
+    "typescript": "^3.0.3"
   },
   "dependencies": {
-    "@uniqys/blockchain": "^0.0.1",
-    "@uniqys/signature": "^0.0.1"
+    "@uniqys/blockchain": "^0.0.4",
+    "@uniqys/signature": "^0.0.4"
   }
 }

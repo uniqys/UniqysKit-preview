@@ -10,6 +10,7 @@ import Router from 'koa-router'
 import { URL } from 'url'
 import net from 'net'
 import http from 'http'
+import { EasyMemcached } from './memcached-implementation'
 
 export interface Node extends Core {
   start (): Promise<void>
@@ -20,13 +21,15 @@ export class Easy {
   public readonly node: Node
   public readonly controller: Controller
   private readonly state: State
+  private readonly memcachedImpl: EasyMemcached
   constructor (
     private readonly app: URL,
     store: Store<Buffer, Buffer>,
     node: (dapp: Controller) => Node
   ) {
     this.state = new State(store)
-    this.controller = new Controller(app, this.state)
+    this.memcachedImpl = new EasyMemcached(this.state.app)
+    this.controller = new Controller(app, this.state, this.memcachedImpl)
     this.node = node(this.controller)
   }
   public async start () {
@@ -35,7 +38,7 @@ export class Easy {
 
   public gateway (): http.Server { return new Gateway(this.node, this.state, new OuterApi(this.state), this.app) }
   public innerApi (): http.Server { return this._serveApi(new InnerApi(this.state)) }
-  public innerMemcachedCompatible (): net.Server { return new MemcachedCompatibleServer(this.state.app) }
+  public innerMemcachedCompatible (): net.Server { return new MemcachedCompatibleServer(this.memcachedImpl) }
 
   private _serveApi (api: Router): http.Server {
     return http.createServer(new Koa()

@@ -1,5 +1,12 @@
 {
   "extends": "../../../config-base/tsconfig.build.json",
+  "compilerOptions": {
+    "typeRoots": [
+      "./node_modules/@uniqys/type-definitions/types",
+      "./node_modules/@types",
+      "../../node_modules/@types"
+    ]
+  },
   "include": [
     "./server/src/**/*.ts"
   ]

@@ -1,8 +1,7 @@
-import { Response, Checker } from './handler'
+import { MemcachedSubset, Response } from './memcached-compatible-server'
 import { Serializer, Deserializer, serialize, deserialize, UInt32, UInt64 } from '@uniqys/serialize'
 import { Store } from '@uniqys/store'
-import semaphore from 'semaphore'
-import { takeSemaphoreAsync } from '@uniqys/semaphore-async'
+import { Mutex } from '@uniqys/lock'
 
 class Item {
   constructor (
@@ -32,21 +31,26 @@ class Item {
   }
 }
 
+// This implementation supports a read-only mode.
+export enum OperationMode { ReadWrite, ReadOnly }
+
 export interface Options {
   useCas?: boolean
+  defaultMode?: OperationMode
 }
 
-export class MemcachedSubset {
+export class EasyMemcached implements MemcachedSubset {
   private readonly useCas: boolean
-  private readonly semaphore: semaphore.Semaphore
   private readonly itemSerializer: Serializer<Item>
   private readonly itemDeserializer: Deserializer<Item>
+  private readonly mutex = new Mutex()
+  private _mode: OperationMode
   constructor (
     private readonly store: Store<Buffer, Buffer>,
     options: Options = {}
   ) {
     this.useCas = options.useCas || false
-    this.semaphore = semaphore(1)
+    this._mode = options.defaultMode || OperationMode.ReadOnly // default is READ ONLY
     if (this.useCas) {
       this.itemSerializer = Item.serialize
       this.itemDeserializer = Item.deserialize
@@ -55,9 +59,15 @@ export class MemcachedSubset {
       this.itemDeserializer = Item.noCasDeserialize
     }
   }
+  public get mode () { return this._mode }
+  public changeMode (mode: OperationMode) {
+    // NOTE: For performance, there is no lock of mode state.
+    this._mode = mode
+  }
   public async set (keyString: string, flags: number, data: Buffer): Promise<Response.Stored> {
+    this.checkWritable()
     const key = Buffer.from(keyString, 'utf8')
-    return takeSemaphoreAsync<Response.Stored>(this.semaphore, async () => {
+    return this.mutex.use<Response.Stored>(async () => {
       const casUniq = this.useCas
         ? (await this.store.get(key)).match(v => deserialize(v, this.itemDeserializer).casUniq, () => 0)
         : 0
@@ -172,10 +182,11 @@ export class MemcachedSubset {
   }
   public async * stats (...args: any[]): AsyncIterable<Response.Stat> {
     // TODO: return some useful information
-    if (args.length > 0) { throw new Checker.CheckError('unsupported argument') }
+    if (args.length > 0) { throw new Error('unsupported argument') }
     return undefined
   }
   public async flush (): Promise<Response.Ok> {
+    this.checkWritable()
     await this.store.clear()
     return Response.Ok
   }
@@ -190,12 +201,16 @@ export class MemcachedSubset {
     return Promise.resolve()
   }
   private async getAndAct<T> (keyString: string, action: (key: Buffer, item?: Item) => Promise<T>): Promise<T> {
+    this.checkWritable()
     const key = Buffer.from(keyString, 'utf8')
-    return takeSemaphoreAsync(this.semaphore, async () =>
+    return this.mutex.use(async () =>
       action(key, (await this.store.get(key)).match(
         v => deserialize(v, this.itemDeserializer),
         () => undefined
       ))
     )
+  }
+  private checkWritable () {
+    if (this.mode === OperationMode.ReadOnly) { throw new Error('current mode is read only') }
   }
 }

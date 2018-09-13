@@ -6,11 +6,10 @@ module.exports = {
   resolve: {
     extensions: [ '.ts', '.js' ]
   },
-  entry: {
-    easy: './webpack/index.ts'
-  },
+  entry: path.resolve(__dirname, 'webpack', 'index.ts'),
   output: {
     path: path.resolve(__dirname, 'lib'),
+    pathinfo: false,
     filename: 'easy.js',
     library: 'Easy',
     libraryTarget: 'umd'
@@ -31,6 +30,8 @@ module.exports = {
       pattern: /.*/,
       unacceptablePattern: /GPL/,
       abortOnUnacceptableLicense: true,
+      modulesDirectories: ['../../node_modules'], // hoisted
+      perChunkOutput: false,
       addBanner: true
     })
   ]

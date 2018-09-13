@@ -1,9 +1,15 @@
 {
   "name": "@uniqys/easy-framework",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "Uniqys Easy Framework server",
   "author": "Uniqys Project (https://uniqys.net)",
-  "private": true,
+  "license": "SEE LICENSE IN LICENSE.md",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "/dist"
+  ],
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -14,20 +20,19 @@
     "test:jest": "jest --forceExit --detectOpenHandles --coverage --verbose"
   },
   "dependencies": {
-    "@uniqys/blockchain": "^0.0.1",
-    "@uniqys/dapp-interface": "^0.0.1",
-    "@uniqys/easy-types": "^0.0.1",
-    "@uniqys/merkle-patricia-trie": "^0.0.1",
-    "@uniqys/serialize": "^0.0.1",
-    "@uniqys/signature": "^0.0.1",
-    "@uniqys/store": "^0.0.1",
-    "@uniqys/types": "^0.0.1",
-    "@uniqys/semaphore-async": "^0.0.1",
+    "@uniqys/blockchain": "^0.0.4",
+    "@uniqys/dapp-interface": "^0.0.4",
+    "@uniqys/easy-types": "^0.0.4",
+    "@uniqys/lock": "^0.0.4",
+    "@uniqys/merkle-patricia-trie": "^0.0.4",
+    "@uniqys/serialize": "^0.0.4",
+    "@uniqys/signature": "^0.0.4",
+    "@uniqys/store": "^0.0.4",
+    "@uniqys/types": "^0.0.4",
     "debug": "^3.1.0",
     "koa": "^2.5.2",
     "koa-bodyparser": "^4.2.1",
-    "koa-router": "^7.4.0",
-    "semaphore": "^1.1.0"
+    "koa-router": "^7.4.0"
   },
   "devDependencies": {
     "@types/debug": "0.0.30",
@@ -35,15 +40,14 @@
     "@types/koa": "^2.0.46",
     "@types/koa-bodyparser": "^5.0.1",
     "@types/koa-router": "^7.0.30",
-    "@types/node": "^10.5.2",
-    "@types/semaphore": "^1.1.0",
+    "@types/node": "^10.9.4",
     "@types/split": "^0.3.28",
-    "@uniqys/type-definitions": "^0.0.1",
+    "@uniqys/type-definitions": "^0.0.4",
     "jest": "^23.3.0",
     "npm-run-all": "^4.1.3",
     "split": "^1.0.1",
     "ts-jest": "^23.0.1",
     "tslint": "^5.11.0",
-    "typescript": "^2.9.2"
+    "typescript": "^3.0.3"
   }
 }

@@ -2,6 +2,7 @@ import Router from 'koa-router'
 import BodyParser from 'koa-bodyparser'
 import { State } from './state'
 import { Address, Hash } from '@uniqys/signature'
+import { Mutex } from '@uniqys/lock'
 
 function maybeHash (str: string): Hash | undefined {
   try { return Hash.fromHexString(str) } catch { return undefined }
@@ -63,6 +64,7 @@ export class OuterApi extends Router {
 }
 
 export class InnerApi extends OuterApi {
+  private readonly mutex = new Mutex()
   constructor (
     state: State
   ) {
@@ -73,7 +75,7 @@ export class InnerApi extends OuterApi {
         ctx.assert(address, 400)
         const [balance] = ctx.request.body as [number]
         ctx.assert(balance && typeof (balance as any) === 'number', 400)
-        await this.state.lock(async () => {
+        await this.mutex.use(async () => {
           const account = await this.state.getAccount(address!)
           await this.state.setAccount(address!, account.setBalance(balance))
         })
@@ -86,7 +88,7 @@ export class InnerApi extends OuterApi {
         ctx.assert(fromAddr, 400)
         ctx.assert(toAddr, 400)
         ctx.assert(value && typeof (value as any) === 'number', 400)
-        await this.state.lock(async () => {
+        await this.mutex.use(async () => {
           const fromAccount = await this.state.getAccount(fromAddr!)
           const toAccount = await this.state.getAccount(toAddr!)
           await this.state.setAccount(fromAddr!, fromAccount.decreaseBalance(value))

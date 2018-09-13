@@ -1,9 +1,15 @@
 {
   "name": "@uniqys/chain-core",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "Uniqys Chain Core",
   "author": "Uniqys Project (https://uniqys.net)",
-  "private": true,
+  "license": "SEE LICENSE IN LICENSE.md",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "/dist"
+  ],
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -14,26 +20,24 @@
     "test:jest": "jest --forceExit --detectOpenHandles --coverage --verbose"
   },
   "dependencies": {
-    "@uniqys/async-loop": "^0.0.1",
-    "@uniqys/blockchain": "^0.0.1",
-    "@uniqys/dapp-interface": "^0.0.1",
-    "@uniqys/p2p-network": "^0.0.1",
-    "@uniqys/priority-queue": "^0.0.1",
-    "@uniqys/semaphore-async": "^0.0.1",
-    "@uniqys/signature": "^0.0.1",
-    "debug": "^3.1.0",
-    "semaphore": "^1.1.0"
+    "@uniqys/async-loop": "^0.0.4",
+    "@uniqys/blockchain": "^0.0.4",
+    "@uniqys/dapp-interface": "^0.0.4",
+    "@uniqys/lock": "^0.0.4",
+    "@uniqys/p2p-network": "^0.0.4",
+    "@uniqys/priority-queue": "^0.0.4",
+    "@uniqys/signature": "^0.0.4",
+    "debug": "^3.1.0"
   },
   "devDependencies": {
     "@types/debug": "0.0.30",
     "@types/jest": "^23.3.0",
-    "@types/node": "^10.5.2",
-    "@types/semaphore": "^1.1.0",
-    "@uniqys/type-definitions": "^0.0.1",
+    "@types/node": "^10.9.4",
+    "@uniqys/type-definitions": "^0.0.4",
     "jest": "^23.3.0",
     "npm-run-all": "^4.1.3",
     "ts-jest": "^23.0.1",
     "tslint": "^5.11.0",
-    "typescript": "^2.9.2"
+    "typescript": "^3.0.3"
   }
 }

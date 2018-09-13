@@ -6,8 +6,7 @@ import { Address, Hash } from '@uniqys/signature'
 import { Account } from './account'
 import { Optional } from '@uniqys/types'
 import { UInt64, deserialize, serialize } from '@uniqys/serialize'
-import semaphore from 'semaphore'
-import { takeSemaphoreAsync } from '@uniqys/semaphore-async'
+import { ReadWriteLock } from '@uniqys/lock'
 
 namespace MetaKey {
   export const height = Buffer.from('height')
@@ -51,7 +50,7 @@ export class State {
   public readonly result: TransactionResult
   public readonly top: MerklePatriciaTrie
   public readonly app: Store<Buffer, Buffer>
-  private readonly semaphore: semaphore.Semaphore
+  public readonly rwLock: ReadWriteLock
 
   constructor (
     private readonly store: Store<Buffer, Buffer>
@@ -60,13 +59,10 @@ export class State {
     this.result = new TransactionResult(new Namespace(this.store, 'results:'))
     this.top = new MerklePatriciaTrie(new TrieStore(new Namespace(this.store, 'app:')))
     this.app = new Namespace(this.top, Address.zero.buffer)
-    this.semaphore = semaphore(1)
+    this.rwLock = new ReadWriteLock()
   }
   public async ready (): Promise<void> {
     await this.top.ready()
-  }
-  public lock<T> (task: () => Promise<T>): Promise<T> {
-    return takeSemaphoreAsync(this.semaphore, task)
   }
   public async appState (): Promise<AppState> {
     const root = this.top.root
@@ -81,9 +77,5 @@ export class State {
   }
   public async setAccount (address: Address, account: Account): Promise<void> {
     await this.top.set(address.buffer, serialize(account))
-  }
-  public async pure<T> (task: () => Promise<T>): Promise<T> {
-    const root = this.top.root
-    return task().finally(() => this.top.rollback(root))
   }
 }

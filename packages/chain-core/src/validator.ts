@@ -63,7 +63,7 @@ export class ValidatorNode<T extends dapi.Dapp> extends Node<T> {
     this.blockInConsensus = undefined
 
     const consensus = new Consensus([this.keyPair.sign(block.hash)]) // only my signature
-    await this.blockchain.blockStore.lock(async () => {
+    await this.blockchain.blockStore.mutex.use(async () => {
       const knownHeight = await this.blockchain.height
       const height = block.header.height
       if (height === knownHeight + 1) {

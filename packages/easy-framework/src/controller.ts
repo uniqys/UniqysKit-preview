@@ -3,6 +3,7 @@ import { Transaction as CoreTransaction } from '@uniqys/blockchain'
 import { SignedTransaction } from '@uniqys/easy-types'
 import { deserialize } from '@uniqys/serialize'
 import { State } from './state'
+import { EasyMemcached, OperationMode } from './memcached-implementation'
 import { SignedRequest, Response } from './packer'
 import { URL } from 'url'
 import debug from 'debug'
@@ -11,7 +12,8 @@ const logger = debug('easy-fw:controller')
 export class Controller implements Dapp {
   constructor (
     private readonly app: URL,
-    private readonly state: State
+    private readonly state: State,
+    private readonly memcachedImpl: EasyMemcached
   ) { }
 
   public async connect (): Promise<AppState> {
@@ -44,21 +46,25 @@ export class Controller implements Dapp {
     for (const coreTx of coreTxs) {
       const tx = deserialize(coreTx.data, SignedTransaction.deserialize)
       const sender = tx.signer
-      const account = await this.state.getAccount(sender)
-      // skip non continuous nonce transaction
-      if (tx.nonce !== account.nonce + 1) continue
-      await this.state.setAccount(sender, account.incrementNonce())
-      const root = this.state.top.root
-      try {
-        const res = await SignedRequest.unpack(tx, this.app)
-        await this.state.result.set(coreTx.hash, await Response.pack(res))
-        if (res.statusCode && 400 <= res.statusCode && res.statusCode < 600) {
-          throw new Error(res.statusMessage)
+      await this.state.rwLock.writeLock.use(async () => {
+        const root = this.state.top.root
+        try {
+          const next = (await this.state.getAccount(sender)).incrementNonce()
+          // skip non continuous nonce transaction
+          if (tx.nonce !== next.nonce) { throw new Error('non continuous nonce') }
+          await this.state.setAccount(sender, next)
+          // allow read/write
+          this.memcachedImpl.changeMode(OperationMode.ReadWrite)
+          const res = await Response.pack(await SignedRequest.unpack(tx, this.app))
+          await this.state.result.set(coreTx.hash, res)
+          if (400 <= res.status && res.status < 600) { throw new Error(res.message) }
+        } catch (err) {
+          logger('error in action: %s', err.message)
+          await this.state.top.rollback(root)
+        } finally {
+          this.memcachedImpl.changeMode(OperationMode.ReadOnly)
         }
-      } catch (err) {
-        logger('error in action: %s', err.message)
-        await this.state.top.rollback(root)
-      }
+      })
     }
     await this.state.meta.incrementHeight()
     return this.state.appState()

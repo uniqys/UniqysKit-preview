@@ -4,8 +4,7 @@ import { AsyncLoop } from '@uniqys/async-loop'
 import { EventEmitter } from 'events'
 import { Message } from '@uniqys/p2p-network'
 import { PriorityQueue } from '@uniqys/priority-queue'
-import semaphore from 'semaphore'
-import { takeSemaphoreAsync } from '@uniqys/semaphore-async'
+import { Mutex } from '@uniqys/lock'
 import debug from 'debug'
 const logger = debug('chain-core:sync')
 
@@ -42,7 +41,7 @@ export class Synchronizer {
   private readonly blockQueue = new PriorityQueue<{block: Block, consensus: Consensus, from: RemoteNode}>()
   private readonly fetchSchedule = new Map<number, NodeJS.Timer>()
   private readonly chainingLoop = new AsyncLoop(() => this.chainPendingBlock())
-  private readonly catchUpSemaphore = semaphore(1)
+  private readonly catchUpMutex = new Mutex()
   private readonly event = new EventEmitter()
   private catchUpTimer?: NodeJS.Timer
   constructor (
@@ -140,8 +139,8 @@ export class Synchronizer {
   // catch up with best node
   private catchUp (): void {
     // only one process at same time
-    if (this.catchUpSemaphore.available) {
-      takeSemaphoreAsync(this.catchUpSemaphore, () => this.catchUpAsync())
+    if (!this.catchUpMutex.locked) {
+      this.catchUpMutex.use(() => this.catchUpAsync())
         .catch(err => this.event.emit('error', err))
     }
     this.resetCatchUpTimer()
@@ -262,7 +261,7 @@ export class Synchronizer {
   }
 
   private updateHeight (height: number, consensus: Consensus) {
-    return this.blockchain.blockStore.lock(async () => {
+    return this.blockchain.blockStore.mutex.use(async () => {
       const known = await this.blockchain.height
       if (height > known) {
         await this.blockchain.blockStore.setHeight(height)
@@ -284,7 +283,7 @@ export class Synchronizer {
             pending.block.validate()
             pending.consensus.validate(pending.block.hash, await this.trustedValidatorSet())
             // take lock and recheck height
-            await this.blockchain.blockStore.lock(async () => {
+            await this.blockchain.blockStore.mutex.use(async () => {
               const knownHeight = await this.blockchain.height
               // istanbul ignore else: OK. The block has been added concurrently by another logic.
               if (height === knownHeight + 1) {

@@ -1,7 +1,7 @@
 // @types/levelup is no longer correct.
 // NOTE: Maybe soon, levelup will include type definition officially.
 declare module 'levelup' {
-  import { AbstractLevelDOWN, AbstractIteratorOptions, Batch } from 'abstract-leveldown'
+  import { AbstractLevelDOWN, AbstractIteratorOptions, AbstractBatch } from 'abstract-leveldown'
   import levelErrors from 'level-errors'
   import { EventEmitter } from 'events'
 
@@ -25,9 +25,9 @@ declare module 'levelup' {
       del(key: K, callback: (err: any) => void): void
       del(key: K, options?: DO): Promise<void>
 
-      batch(array: Batch<K, V>[], options: BO, callback: (err: any) => void): void
-      batch(array: Batch<K, V>[], callback: (err: any) => void): void
-      batch(array: Batch<K, V>[], options?: BO): Promise<void>
+      batch(array: AbstractBatch<K, V>[], options: BO, callback: (err: any) => void): void
+      batch(array: AbstractBatch<K, V>[], callback: (err: any) => void): void
+      batch(array: AbstractBatch<K, V>[], options?: BO): Promise<void>
       batch(): ChainedBatch<K, V>
 
       isOpen(): boolean
@@ -50,13 +50,13 @@ declare module 'levelup' {
     export const errors: typeof levelErrors
   }
   export function levelup<K=any, V=any, O=any, PO=any, GO=any, DO=any, IO=any, BO=any>(
-    db: AbstractLevelDOWN<K, V, O, PO, GO, DO, IO, BO>,
+    db: AbstractLevelDOWN<K, V>,
     options: O,
     callback?: (err: any) => void
   ): levelup.LevelUp<K, V, O, PO, GO, DO, IO, BO>
 
   export function levelup<K=any, V=any, O=any, PO=any, GO=any, DO=any, IO=any, BO=any>(
-    db: AbstractLevelDOWN<K, V, O, PO, GO, DO, IO, BO>,
+    db: AbstractLevelDOWN<K, V>,
     callback?: (err: any) => void
   ): levelup.LevelUp<K, V, O, PO, GO, DO, IO, BO>
 

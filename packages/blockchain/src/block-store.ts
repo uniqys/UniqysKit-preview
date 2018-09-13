@@ -1,9 +1,8 @@
 import { Store } from '@uniqys/store'
+import { Mutex } from '@uniqys/lock'
 import { serialize, deserialize, UInt64 } from '@uniqys/serialize'
 import { BlockHeader, BlockBody } from './block'
 import { Consensus } from './consensus'
-import semaphore from 'semaphore'
-import { takeSemaphoreAsync } from '@uniqys/semaphore-async'
 
 namespace Key {
   const HEADER_PREFIX = 'header:'
@@ -26,17 +25,11 @@ namespace Key {
   }
 }
 export class BlockStore {
-  private readonly semaphore: semaphore.Semaphore
+  public readonly mutex = new Mutex()
   private _height: undefined | number // cache
   constructor (
     private readonly store: Store<Buffer, Buffer>
-  ) {
-    this.semaphore = semaphore(1)
-  }
-
-  public lock<T> (task: () => Promise<T>): Promise<T> {
-    return takeSemaphoreAsync(this.semaphore, task)
-  }
+  ) {}
 
   public async getHeight (): Promise<number> {
     if (this._height) { return Promise.resolve(this._height) }

@@ -8,15 +8,33 @@ declare module 'libp2p' {
   import Ping from 'libp2p-ping'
   import { Connection } from 'interface-connection'
 
-  // correct?
-  export type Module = {
-    transport: any[],
-    connection?: {
-      muxer?: any[],
-      crypto?: any[],
+  export type Options = {
+    peerInfo: PeerInfo,
+    peerBook?: PeerBook,
+    modules: {
+      transport: any[],
+      streamMuxer?: any[],
+      connEncryption?: any[],
+      peerDiscovery?: any[],
+      dht?: any
     },
-    discovery?: any[],
-    dht?: any
+    config?: {
+      peerDiscovery?: {},
+      relay?: {
+        enabled?: boolean,
+        hop?: {
+          enabled?: boolean,
+          active?: boolean
+        }
+      },
+      dht?: {
+        kBucketSize?: number
+      },
+      EXPERIMENTAL?: {
+        pubsub?: boolean,
+        dht?: boolean
+      }
+    }
   }
 
   export type PubSubMessage = {
@@ -37,7 +55,7 @@ declare module 'libp2p' {
   }
 
   export default class Node extends EventEmitter {
-    constructor(_modules: Module, _peerInfo: PeerInfo, _peerBook?: PeerBook, _options?: {});
+    constructor(_options: Options);
 
     start(callback: (err: Error | null) => void): void;
     stop(callback: (err: Error | null) => void): void;

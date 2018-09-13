@@ -11,7 +11,7 @@ export class Blockchain {
   ) { }
   public async ready (): Promise<void> {
     if (this.isReady) { return Promise.resolve() }
-    await this.blockStore.lock(async () => {
+    await this.blockStore.mutex.use(async () => {
       const height = await this.blockStore.getHeight()
       if (height === 0) {
         await Promise.all([
@@ -50,7 +50,7 @@ export class Blockchain {
   }
   public async consensusOf (height: number): Promise<Consensus> {
     this.checkReady()
-    return this.blockStore.lock(async () => {
+    return this.blockStore.mutex.use(async () => {
       const chainHeight = await this.blockStore.getHeight()
       if (chainHeight === height) {
         // no next block

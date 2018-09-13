@@ -1,9 +1,8 @@
 import { SyncProtocol } from '@uniqys/p2p-network'
-import semaphore from 'semaphore'
-import { takeSemaphoreAsync } from '@uniqys/semaphore-async'
+import { Mutex } from '@uniqys/lock'
 
 export class RemoteNode {
-  private readonly semaphore = semaphore(1)
+  private readonly mutex = new Mutex()
   constructor (
     public readonly peerId: string,
     public readonly syncProtocol: SyncProtocol,
@@ -11,11 +10,11 @@ export class RemoteNode {
   ) { }
 
   public get isIdle () {
-    return this.semaphore.available(1)
+    return !this.mutex.locked
   }
 
   public use<T> (task: () => Promise<T>): Promise<T> {
-    return takeSemaphoreAsync(this.semaphore, task)
+    return this.mutex.use(task)
   }
 }
 
