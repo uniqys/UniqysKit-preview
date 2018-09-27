@@ -5,6 +5,7 @@
   "private": true,
   "license": "SEE LICENSE IN LICENSE.md",
   "scripts": {
+    "postinstall": "check-node-version --package",
     "bootstrap": "lerna bootstrap --hoist",
     "clean": "lerna clean",
     "build": "lerna run build --concurrency 4",
@@ -13,7 +14,11 @@
     "test:lint": "lerna run test:lint --concurrency 8",
     "test:jest": "lerna run test:jest --concurrency 4"
   },
+  "engines": {
+    "node": ">=10.9.0"
+  },
   "devDependencies": {
+    "check-node-version": "^3.2.0",
     "lerna": "^3.2.1",
     "npm-run-all": "^4.1.3",
     "run-node": "^1.0.0",
