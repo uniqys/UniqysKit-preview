@@ -39,7 +39,7 @@ However, current version is enough to experience building DApps on Uniqys Core.
 ## Setup for [ndenv](https://github.com/riywo/ndenv)
 
 ```sh
-$ ndenv install v10.1.0
+$ ndenv install v10.9.0
 ```
 
 ## Install
