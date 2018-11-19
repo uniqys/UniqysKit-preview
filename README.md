@@ -1,3 +1,7 @@
+## :warning: This repository of Uniqys Kit preview version has been archived.
+
+See [uniqys/UniqysKit](https://github.com/uniqys/UniqysKit) for future updates.
+
 <h1 align="center">
   <a href="ttps://uniqys.net/kit"><img width="320" src="UniqysKit-logo.png" alt="Uniqys Kit logo" /></a>
 </h1>
